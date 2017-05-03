@@ -15,7 +15,7 @@ class Session():
         self.model = model
         self.optimizer = optim.Adam(model.parameters(), lr=lr)
         self.loss_fn = VAELoss()
-        self.dashboard = Dashboard('Variational-Autoencoder-experiment')
+        self.dashboard = Dashboard('Grammar-Variational-Autoencoder-experiment')
 
     def train(self, loader, epoch_number):
         # built-in method for the nn.module, sets a training flag.

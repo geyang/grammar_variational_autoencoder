@@ -10,7 +10,7 @@ install:
 setup-vis-server:
 	python -m visdom.server > visdom.log 2>&1 &
 	sleep 0.5s
-	open http://localhost:8097/env/Variational-Autoencoder-experiment
+	open http://localhost:8097/env/Grammar-Variational-Autoencoder-experiment
 train:
 	python vae_mnist.py
 evaluate:
