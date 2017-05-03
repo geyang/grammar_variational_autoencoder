@@ -9,6 +9,10 @@
 - [ ] closer look at the paper
 
 ## Usage (To Run)
+
+All of the script bellow are included in the [`./Makefile`](./Makefile). To install and run training, 
+you can just run `make`. For more details, take a look at the `./Makefile`.
+
 1. install dependencies via
     ```bash
     pip install -r requirement.txt
@@ -19,11 +23,8 @@
     ```
 3. In a new prompt run
     ```bash
-    python vae_mnist.py
+    python grammar_vae.py
     ```
-
-Or for with a quick shortcut, you can just run `make`. You can take a look at
-the [`./Makefile`](./Makefile) for more details.
     
 ## Grammar Variational Autoencoder (VAE) and Variational Bayesian methods
 
