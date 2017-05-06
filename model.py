@@ -5,40 +5,54 @@ import torch.nn.functional as F
 
 
 class Decoder(nn.Module):
-    def __init__(self, hidden_n=100):
+    def __init__(self, input_size=200, hidden_n=200):
         super(Decoder, self).__init__()
-        self.gru_1 = nn.GRU(hidden_size=hidden_n)
-        self.gru_2 = nn.GRU(hidden_size=hidden_n)
-        self.gru_3 = nn.GRU(hidden_size=hidden_n)
+        self.hidden_n = hidden_n
+        self.batch_norm = nn.BatchNorm1d(input_size)
+        self.fc = nn.Linear(input_size, hidden_n)
+        self.gru_1 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
+        self.gru_2 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
+        self.gru_3 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
 
-        self.reLU = nn.ReLU()  # reLU non-linear unit for the hidden output
-        self.sigmoid = nn.Sigmoid()  # sigmoid non-linear unit for the output
+    def forward(self, embedded, hidden_2, hidden_3):
+        for i in range(10):
+            out_1, hidden_1 = self.gru_1(input, embedded)
+            out_2, hidden_2 = self.gru_2(out_1, embedded[])
+            out_3, hidden_3 = self.gru_3(out_2, embedded)
+        return F.relu(F.sigmoid(out_3)), hidden_1, hidden_2, hidden_3
 
-    def forward(self, embedded, hidden_1, hidden_2, hidden_3):
-        h, hidden_1 = self.gru_1(embedded, hidden_1)
-        h, hidden_2 = self.gru_1(h, hidden_2)
-        h, hidden_3 = self.gru_1(h, hidden_3)
-        return h, hidden_1, hidden_2, hidden_3
+    def init_hidden(self, batch_size):
+        h1 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
+        h2 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
+        h3 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
+        return h1, h2, h3
 
 
 class Encoder(nn.Module):
-    def __init__(self, ch_1=2, ch_2=3, ch_3=4, z=15):
+    def __init__(self, L, k1=2, k2=3, k3=4, hidden_n=200):
         super(Encoder, self).__init__()
-        self.conv_1 = nn.Conv1d(in_channels=ch_1, out_channels=ch_1, kernel_size=3)
-        self.bn_1 = nn.BatchNorm1d(ch_1)
-        self.conv_2 = nn.Conv1d(in_channels=ch_2, out_channels=ch_2, kernel_size=3)
-        self.bn_2 = nn.BatchNorm1d(ch_2)
-        self.conv_3 = nn.Conv1d(in_channels=ch_3, out_channels=ch_3, kernel_size=3)
-        self.bn_3 = nn.BatchNorm1d(ch_3)
+        # NOTE: GVAE implementation does not use max-pooling. Original DCNN implementation uses max-k pooling.
+        self.conv_1 = nn.Conv1d(in_channels=12, out_channels=12, kernel_size=k1, groups=12)
+        self.bn_1 = nn.BatchNorm1d(12)
+        self.conv_2 = nn.Conv1d(in_channels=12, out_channels=12, kernel_size=k2, groups=12)
+        self.bn_2 = nn.BatchNorm1d(12)
+        self.conv_3 = nn.Conv1d(in_channels=12, out_channels=12, kernel_size=k3, groups=12)
+        self.bn_3 = nn.BatchNorm1d(12)
 
-        self.fc_mu = nn.Linear(ch_3, z)
-        self.fc_var = nn.Linear(ch_3, z)
+        # todo: harded coded because I can LOL
+        self.fc_0 = nn.Linear(12 * 9, hidden_n)
+        self.fc_mu = nn.Linear(hidden_n, hidden_n)
+        self.fc_var = nn.Linear(hidden_n, hidden_n)
 
     def forward(self, x):
+        batch_size = x.size()[0]
+        x = x.transpose(1, 2)
         x = F.relu(self.bn_1(self.conv_1(x)))
         x = F.relu(self.bn_2(self.conv_2(x)))
         x = F.relu(self.bn_3(self.conv_3(x)))
-        return self.fc_mu(x), self.fc_var(x)
+        x_ = x.view(batch_size, -1)
+        h = self.fc_0(x_)
+        return self.fc_mu(h), self.fc_var(h)
 
 
 from visdom_helper.visdom_helper import Dashboard
@@ -68,16 +82,19 @@ class VAELoss(nn.Module):
         return (BCE + KLD) / batch_size
 
 
-class VariationalAutoEncoder(nn.Module):
+class GrammarVariationalAutoEncoder(nn.Module):
     def __init__(self):
-        super(VariationalAutoEncoder, self).__init__()
-        self.encoder = Encoder()
+        super(GrammarVariationalAutoEncoder, self).__init__()
+        self.encoder = Encoder(15)
         self.decoder = Decoder()
 
     def forward(self, x):
-        mu, log_var = self.encoder(x.view(-1, 784))
+        batch_size = x.size()[0]
+        mu, log_var = self.encoder(x)
         z = self.reparameterize(mu, log_var)
-        return self.decoder(z), mu, log_var
+        h1, h2, h3 = self.decoder.init_hidden(batch_size)
+        output, h1, h2, h3 = self.decoder(z, h1, h2, h3)
+        return output, mu, log_var
 
     def reparameterize(self, mu, log_var):
         """you generate a random distribution w.r.t. the mu and log_var from the embedding space."""

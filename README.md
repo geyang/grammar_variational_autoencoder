@@ -4,6 +4,11 @@
 
 - [ ] what type of accuracy metric do we use?
 - [ ] train 
+    - [ ] encoder convolution exact configuration
+    - [ ] read dynamic convolutional network 
+        - [ ] what are the evaluation metrics in DCNN?
+            - [ ] sentiment analysis
+            - [ ] 
 - [ ] think of a demo
 - [ ] closer look at the paper
 

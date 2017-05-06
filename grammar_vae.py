@@ -2,11 +2,11 @@ import numpy as np
 import torch.utils.data
 import torch.optim as optim
 from torch.autograd import Variable
-from torchvision import datasets, transforms
 
-from model import VariationalAutoEncoder, VAELoss
+from model import GrammarVariationalAutoEncoder, VAELoss
 
 from visdom_helper.visdom_helper import Dashboard
+
 
 class Session():
     def __init__(self, model, train_step_init=0, lr=1e-3, is_cuda=False):
@@ -19,7 +19,8 @@ class Session():
     def train(self, loader, epoch_number):
         # built-in method for the nn.module, sets a training flag.
         self.model.train()
-        for batch_idx, (data, _) in enumerate(loader):
+        for batch_idx, data in enumerate(loader):
+            # have to cast data to FloatTensor. DoubleTensor errors with Conv1D
             data = Variable(data)
             # do not use CUDA atm
             self.optimizer.zero_grad()
@@ -51,16 +52,19 @@ class Session():
 
 EPOCHS = 20
 BATCH_SIZE = 128
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=True, download=True,
-                   transform=transforms.ToTensor()),
-    batch_size=BATCH_SIZE, shuffle=True, **{})
-test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST('../data', train=False, transform=transforms.ToTensor()),
-    batch_size=BATCH_SIZE, shuffle=True, **{})
+import h5py
+
+
+def grammar_loader():
+    with h5py.File('data/eq2_grammar_dataset.h5', 'r') as h5f:
+        return torch.FloatTensor(h5f['data'][:])
+
+
+train_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZE, shuffle=False)
+test_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZE, shuffle=False)
 
 losses = []
-vae = VariationalAutoEncoder()
+vae = GrammarVariationalAutoEncoder()
 sess = Session(vae, lr=1e-3)
 for epoch in range(1, EPOCHS + 1):
     losses += sess.train(train_loader, epoch)
