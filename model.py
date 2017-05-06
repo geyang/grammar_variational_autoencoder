@@ -1,32 +1,44 @@
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Decoder(nn.Module):
-    def __init__(self, hidden_n_1=20, hidden_n_2=400):
+    def __init__(self, hidden_n=100):
         super(Decoder, self).__init__()
-        self.fc1 = nn.Linear(hidden_n_1, hidden_n_2)
-        self.fc2 = nn.Linear(hidden_n_2, 784)
+        self.gru_1 = nn.GRU(hidden_size=hidden_n)
+        self.gru_2 = nn.GRU(hidden_size=hidden_n)
+        self.gru_3 = nn.GRU(hidden_size=hidden_n)
 
         self.reLU = nn.ReLU()  # reLU non-linear unit for the hidden output
         self.sigmoid = nn.Sigmoid()  # sigmoid non-linear unit for the output
 
-    def forward(self, embedded):
-        h1 = self.reLU(self.fc1(embedded))
-        return self.sigmoid(self.fc2(h1))
+    def forward(self, embedded, hidden_1, hidden_2, hidden_3):
+        h, hidden_1 = self.gru_1(embedded, hidden_1)
+        h, hidden_2 = self.gru_1(h, hidden_2)
+        h, hidden_3 = self.gru_1(h, hidden_3)
+        return h, hidden_1, hidden_2, hidden_3
 
 
 class Encoder(nn.Module):
-    def __init__(self, hidden_n_1=400, hidden_n_2=20):
+    def __init__(self, ch_1=2, ch_2=3, ch_3=4, z=15):
         super(Encoder, self).__init__()
-        self.fc1 = nn.Linear(784, hidden_n_1)
-        self.fc_mu = nn.Linear(hidden_n_1, hidden_n_2)
-        self.fc_var = nn.Linear(hidden_n_1, hidden_n_2)
+        self.conv_1 = nn.Conv1d(in_channels=ch_1, out_channels=ch_1, kernel_size=3)
+        self.bn_1 = nn.BatchNorm1d(ch_1)
+        self.conv_2 = nn.Conv1d(in_channels=ch_2, out_channels=ch_2, kernel_size=3)
+        self.bn_2 = nn.BatchNorm1d(ch_2)
+        self.conv_3 = nn.Conv1d(in_channels=ch_3, out_channels=ch_3, kernel_size=3)
+        self.bn_3 = nn.BatchNorm1d(ch_3)
+
+        self.fc_mu = nn.Linear(ch_3, z)
+        self.fc_var = nn.Linear(ch_3, z)
 
     def forward(self, x):
-        h1 = self.fc1(x)
-        return self.fc_mu(h1), self.fc_var(h1)
+        x = F.relu(self.bn_1(self.conv_1(x)))
+        x = F.relu(self.bn_2(self.conv_2(x)))
+        x = F.relu(self.bn_3(self.conv_3(x)))
+        return self.fc_mu(x), self.fc_var(x)
 
 
 from visdom_helper.visdom_helper import Dashboard

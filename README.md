@@ -2,11 +2,14 @@
 
 ### Todo
 
-- [ ] data 
-- [ ] model
+- [ ] what type of accuracy metric do we use?
 - [ ] train 
 - [ ] think of a demo
 - [ ] closer look at the paper
+
+#### Done
+- [x] data 
+- [x] model
 
 ## Usage (To Run)
 

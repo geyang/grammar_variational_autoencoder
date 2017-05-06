@@ -8,7 +8,6 @@ from model import VariationalAutoEncoder, VAELoss
 
 from visdom_helper.visdom_helper import Dashboard
 
-
 class Session():
     def __init__(self, model, train_step_init=0, lr=1e-3, is_cuda=False):
         self.train_step = train_step_init
@@ -32,7 +31,6 @@ class Session():
             self.dashboard.append('training_loss', 'line',
                                   X=np.array([self.train_step]),
                                   Y=loss.data.numpy())
-            print(loss.data.numpy())
             if loss.data.numpy()[0] > 500:
                 pass
         return losses

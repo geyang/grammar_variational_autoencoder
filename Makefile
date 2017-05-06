@@ -12,6 +12,6 @@ setup-vis-server:
 	sleep 0.5s
 	open http://localhost:8097/env/Grammar-Variational-Autoencoder-experiment
 train:
-	python vae_mnist.py
+	python grammar_vae.py
 evaluate:
 	python vae_mnist.py
