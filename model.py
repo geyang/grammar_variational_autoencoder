@@ -17,7 +17,7 @@ class Decoder(nn.Module):
     def forward(self, embedded, hidden_2, hidden_3):
         for i in range(10):
             out_1, hidden_1 = self.gru_1(input, embedded)
-            out_2, hidden_2 = self.gru_2(out_1, embedded[])
+            out_2, hidden_2 = self.gru_2(out_1, embedded)
             out_3, hidden_3 = self.gru_3(out_2, embedded)
         return F.relu(F.sigmoid(out_3)), hidden_1, hidden_2, hidden_3
 
