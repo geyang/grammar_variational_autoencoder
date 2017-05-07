@@ -5,10 +5,11 @@ import torch.nn.functional as F
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_size=200, hidden_n=200, max_seq_length=15):
+    def __init__(self, input_size=200, hidden_n=200, output_feature_size=12, max_seq_length=15):
         super(Decoder, self).__init__()
         self.max_seq_length = max_seq_length
         self.hidden_n = hidden_n
+        self.output_feature_size = output_feature_size
         self.batch_norm = nn.BatchNorm1d(input_size)
         self.fc_input = nn.Linear(input_size, hidden_n)
         # we specify each layer manually, so that we can do teacher forcing on the last layer.
@@ -16,26 +17,30 @@ class Decoder(nn.Module):
         self.gru_1 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
         self.gru_2 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
         self.gru_3 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
-        self.fc_out = nn.Linear(input_size, hidden_n)
+        self.fc_out = nn.Linear(hidden_n, output_feature_size)
 
     def forward(self, encoded, hidden_1, hidden_2, hidden_3, beta=0.3, target_seq=None):
         _batch_size = encoded.size()[0]
-        embedded = F.relu(self.fc_input(encoded)) \
+
+        embedded = F.relu(self.fc_input(self.batch_norm(encoded))) \
             .view(_batch_size, 1, -1) \
-            .repeat(1, target_seq or self.max_seq_length, 1)
-        print(embedded.size())
+            .repeat(1, self.max_seq_length, 1)
+        # batch_size, seq_length, hidden_size; batch_size, hidden_size
         out_1, hidden_1 = self.gru_1(embedded, hidden_1)
         out_2, hidden_2 = self.gru_2(out_1, hidden_2)
         # NOTE: need to combine the input from previous layer with the expected output during training.
         if self.training and target_seq:
-            out_2 = out_2 * (1 - beta) + (target_seq or self.max_seq_length) * beta
+            out_2 = out_2 * (1 - beta) + target_seq * beta
         out_3, hidden_3 = self.gru_3(out_2, hidden_3)
-        return F.relu(F.sigmoid(out_3)), hidden_1, hidden_2, hidden_3
+        out = self.fc_out(out_3.contiguous().view(-1, self.hidden_n)).view(_batch_size, self.max_seq_length,
+                                                                           self.output_feature_size)
+        return F.relu(F.sigmoid(out)), hidden_1, hidden_2, hidden_3
 
     def init_hidden(self, batch_size):
-        h1 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
-        h2 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
-        h3 = Variable(torch.zeros(batch_size, self.hidden_n), volatile=True)
+        # NOTE: assume only 1 layer no bi-direction
+        h1 = Variable(torch.zeros(1, batch_size, self.hidden_n), requires_grad=False)
+        h2 = Variable(torch.zeros(1, batch_size, self.hidden_n), requires_grad=False)
+        h3 = Variable(torch.zeros(1, batch_size, self.hidden_n), requires_grad=False)
         return h1, h2, h3
 
 

@@ -41,7 +41,7 @@ class Session():
         self.model.eval()
         test_loss = 0
         for batch_idx, (data, _) in enumerate(loader):
-            data = Variable(data, volatile=True)
+            data = Variable(data)
             # do not use CUDA atm
             recon_batch, mu, logvar = self.model(data)
             test_loss += self.loss_fn(data, mu, logvar, recon_batch).data[0]
@@ -65,6 +65,12 @@ test_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZ
 
 losses = []
 vae = GrammarVariationalAutoEncoder()
+
+# # Add hooks
+# import utils
+# vae.register_forward_hook(utils.forward_tracer)
+# vae.register_backward_hook(utils.backward_tracer)
+
 sess = Session(vae, lr=1e-3)
 for epoch in range(1, EPOCHS + 1):
     losses += sess.train(train_loader, epoch)

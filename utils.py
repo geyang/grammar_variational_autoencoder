@@ -155,6 +155,14 @@ class Struct():
             self.__d[key] = value
 
 
+def forward_tracer(self, input, output):
+    _cprint(c("--> " + self.__class__.__name__, 'red') + " ===forward==> ")
+
+
+def backward_tracer(self, input, output):
+    _cprint(c("--> " + self.__class__.__name__, 'red') + " <==backward=== ")
+
+
 ledger = Ledger()
 
 if __name__ == "__main__":
