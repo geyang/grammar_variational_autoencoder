@@ -40,28 +40,29 @@ class Session():
         # nn.Module method, sets the training flag to False
         self.model.eval()
         test_loss = 0
-        for batch_idx, (data, _) in enumerate(loader):
-            data = Variable(data)
+        for batch_idx, data in enumerate(loader):
+            data = Variable(data, volatile=True)
             # do not use CUDA atm
-            recon_batch, mu, logvar = self.model(data)
-            test_loss += self.loss_fn(data, mu, logvar, recon_batch).data[0]
+            recon_batch, mu, log_var = self.model(data)
+            test_loss += self.loss_fn(data, mu, log_var, recon_batch).data[0]
 
         test_loss /= len(test_loader.dataset)
         print('====> Test set loss: {:.4f}'.format(test_loss))
 
 
 EPOCHS = 20
-BATCH_SIZE = 128
+BATCH_SIZE = 200
 import h5py
 
 
-def grammar_loader():
+def grammar_loader(n=1):
     with h5py.File('data/eq2_grammar_dataset.h5', 'r') as h5f:
-        return torch.FloatTensor(h5f['data'][:])
+        return torch.FloatTensor(h5f['data'][::n])
 
 
 train_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZE, shuffle=False)
-test_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZE, shuffle=False)
+# todo: need to have separate training and validation set
+test_loader = torch.utils.data.DataLoader(grammar_loader(500), batch_size=BATCH_SIZE, shuffle=False)
 
 losses = []
 vae = GrammarVariationalAutoEncoder()
@@ -71,7 +72,7 @@ vae = GrammarVariationalAutoEncoder()
 # vae.register_forward_hook(utils.forward_tracer)
 # vae.register_backward_hook(utils.backward_tracer)
 
-sess = Session(vae, lr=1e-3)
+sess = Session(vae, lr=2e-3)
 for epoch in range(1, EPOCHS + 1):
     losses += sess.train(train_loader, epoch)
     print('epoch {} complete'.format(epoch))
