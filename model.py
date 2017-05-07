@@ -18,13 +18,16 @@ class Decoder(nn.Module):
         self.gru_3 = nn.GRU(input_size=input_size, hidden_size=hidden_n, batch_first=True)
         self.fc_out = nn.Linear(input_size, hidden_n)
 
-    def forward(self, encoded, hidden_1, hidden_2, hidden_3):
+    def forward(self, encoded, hidden_1, hidden_2, hidden_3, beta=0.3, target_seq=None):
         _batch_size = encoded.size()[0]
         embedded = F.relu(self.fc_input(encoded)) \
             .view(_batch_size, 1, -1) \
             .repeat(1, self.max_seq_length, 1)
         out_1, hidden_1 = self.gru_1(embedded, hidden_1)
         out_2, hidden_2 = self.gru_2(out_1, hidden_2)
+        # NOTE: need to combine the input from previous layer with the expected output during training.
+        if self.training and target_seq:
+            out_2 = out_2 * (1 - beta) + target_seq * beta
         out_3, hidden_3 = self.gru_3(out_2, hidden_3)
         return F.relu(F.sigmoid(out_3)), hidden_1, hidden_2, hidden_3
 
