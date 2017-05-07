@@ -62,7 +62,7 @@ class Encoder(nn.Module):
 
     def forward(self, x):
         batch_size = x.size()[0]
-        x = x.transpose(1, 2)
+        x = x.transpose(1, 2).contiguous()
         x = F.relu(self.bn_1(self.conv_1(x)))
         x = F.relu(self.bn_2(self.conv_2(x)))
         x = F.relu(self.bn_3(self.conv_3(x)))
