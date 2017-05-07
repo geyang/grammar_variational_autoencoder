@@ -22,12 +22,13 @@ class Decoder(nn.Module):
         _batch_size = encoded.size()[0]
         embedded = F.relu(self.fc_input(encoded)) \
             .view(_batch_size, 1, -1) \
-            .repeat(1, self.max_seq_length, 1)
+            .repeat(1, target_seq or self.max_seq_length, 1)
+        print(embedded.size())
         out_1, hidden_1 = self.gru_1(embedded, hidden_1)
         out_2, hidden_2 = self.gru_2(out_1, hidden_2)
         # NOTE: need to combine the input from previous layer with the expected output during training.
         if self.training and target_seq:
-            out_2 = out_2 * (1 - beta) + target_seq * beta
+            out_2 = out_2 * (1 - beta) + (target_seq or self.max_seq_length) * beta
         out_3, hidden_3 = self.gru_3(out_2, hidden_3)
         return F.relu(F.sigmoid(out_3)), hidden_1, hidden_2, hidden_3
 
