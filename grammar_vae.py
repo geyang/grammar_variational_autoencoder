@@ -29,11 +29,18 @@ class Session():
             loss.backward()
             self.optimizer.step()
             self.train_step += 1
+
+            loss_value = loss.data.numpy()
+            batch_size = len(data)
+
             self.dashboard.append('training_loss', 'line',
                                   X=np.array([self.train_step]),
-                                  Y=loss.data.numpy())
-            if loss.data.numpy()[0] > 500:
-                pass
+                                  Y=loss_value / batch_size)
+
+            if batch_idx == 0:
+                print('batch size', batch_size)
+            if batch_idx % 40 == 0:
+                print('training loss: {:.4f}'.format(loss_value[0] / batch_size))
         return losses
 
     def test(self, loader):
@@ -47,6 +54,7 @@ class Session():
             test_loss += self.loss_fn(data, mu, log_var, recon_batch).data[0]
 
         test_loss /= len(test_loader.dataset)
+        print('testset length', len(test_loader.dataset))
         print('====> Test set loss: {:.4f}'.format(test_loss))
 
 
@@ -55,22 +63,24 @@ BATCH_SIZE = 200
 import h5py
 
 
-def grammar_loader(n=1):
+def kfold_loader(k, s, e=None):
+    if not e:
+        e = k
     with h5py.File('data/eq2_grammar_dataset.h5', 'r') as h5f:
-        return torch.FloatTensor(h5f['data'][::n])
+        result = np.concatenate([h5f['data'][i::k] for i in range(s, e)])
+        return torch.FloatTensor(result)
 
 
-train_loader = torch.utils.data.DataLoader(grammar_loader(), batch_size=BATCH_SIZE, shuffle=False)
+train_loader = torch.utils.data \
+    .DataLoader(kfold_loader(10, 1),
+                batch_size=BATCH_SIZE, shuffle=False)
 # todo: need to have separate training and validation set
-test_loader = torch.utils.data.DataLoader(grammar_loader(500), batch_size=BATCH_SIZE, shuffle=False)
+test_loader = torch.utils \
+    .data.DataLoader(kfold_loader(10, 0, 1),
+                     batch_size=BATCH_SIZE, shuffle=False)
 
 losses = []
 vae = GrammarVariationalAutoEncoder()
-
-# # Add hooks
-# import utils
-# vae.register_forward_hook(utils.forward_tracer)
-# vae.register_backward_hook(utils.backward_tracer)
 
 sess = Session(vae, lr=2e-3)
 for epoch in range(1, EPOCHS + 1):
