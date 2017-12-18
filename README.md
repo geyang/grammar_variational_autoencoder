@@ -74,9 +74,9 @@ you can just run `make`. For more details, take a look at the `./Makefile`.
 
 | **method** | **frac. valid**     | **avg. score**                           |
 | ---------- | ------------------- | ---------------------------------------- |
-| GAVE       | 0.990 $$\pm$$ 0.001 | 3.47 $$\pm$$ 0.24                        |
-| My Score   |                     | ~~0.16~~ $$\pm$$ ~~0.001~~ todo: need to measure MSE |
-| CAVE       | -0.31 $$\pm$$ 0.001 | 4.75 $$\pm$$ 0.25                        |
+| GAVE       | 0.990 ± 0.001 | 3.47 ± 0.24                        |
+| My Score   |                     | ~~0.16~~ ± ~~0.001~~ todo: need to measure MSE |
+| CAVE       | -0.31 ± 0.001 | 4.75 ± 0.25                        |
 
 **Automatic Chemical Design** [https://arxiv.org/abs/1610.02415](https://arxiv.org/abs/1610.02415)
 
