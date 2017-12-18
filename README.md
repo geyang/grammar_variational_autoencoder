@@ -71,6 +71,7 @@ you can just run `make`. For more details, take a look at the `./Makefile`.
 - Why don’t they use math expression result? (not fine grained enough?)
 - **Visualization**: result is smoother (color is logP). <= trivial result
 - accuracy **table 2 row 1: math expressions** 
+
 | **method** | **frac. valid**     | **avg. score**                           |
 | ---------- | ------------------- | ---------------------------------------- |
 | GAVE       | 0.990 $$\pm$$ 0.001 | 3.47 $$\pm$$ 0.24                        |
