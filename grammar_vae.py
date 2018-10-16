@@ -19,6 +19,7 @@ class Session():
     def train(self, loader, epoch_number):
         # built-in method for the nn.module, sets a training flag.
         self.model.train()
+        _losses = []
         for batch_idx, data in enumerate(loader):
             # have to cast data to FloatTensor. DoubleTensor errors with Conv1D
             data = Variable(data)
@@ -26,6 +27,7 @@ class Session():
             self.optimizer.zero_grad()
             recon_batch, mu, log_var = self.model(data)
             loss = self.loss_fn(data, mu, log_var, recon_batch)
+            _losses.append(loss.numpy())
             loss.backward()
             self.optimizer.step()
             self.train_step += 1
@@ -41,7 +43,7 @@ class Session():
                 print('batch size', batch_size)
             if batch_idx % 40 == 0:
                 print('training loss: {:.4f}'.format(loss_value[0] / batch_size))
-        return losses
+        return _losses
 
     def test(self, loader):
         # nn.Module method, sets the training flag to False
